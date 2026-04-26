@@ -90,10 +90,10 @@ export function CreateInvoiceForm() {
     tokens[0]?.key ?? "USDm",
   );
   const [amount, setAmount] = useState("");
-  const [title, setTitle] = useState("MiniPay Checkout");
+  const [title, setTitle] = useState("LinkRail Checkout");
   const [reference, setReference] = useState("");
   const [note, setNote] = useState(
-    "Tap pay in MiniPay to complete this invoice in one step.",
+    "Tap pay in MiniPay to complete this LinkRail invoice in one step.",
   );
   const [expiryWindow, setExpiryWindow] = useState("7");
   const [pendingAction, setPendingAction] = useState<PendingAction>(null);
@@ -326,7 +326,7 @@ export function CreateInvoiceForm() {
       <div className="surface-head">
         <div>
           <p className="eyebrow">Invoice Builder</p>
-          <h2>Create a MiniPay checkout link in one pass</h2>
+          <h2>Create a LinkRail checkout link in one pass</h2>
         </div>
         <div className="pill-row">
           <span className="status-pill open">{activeNetwork}</span>

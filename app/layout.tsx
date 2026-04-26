@@ -5,9 +5,9 @@ import { SiteHeader } from "@/components/site-header";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "MiniPay Checkout",
+  title: "LinkRail",
   description:
-    "Share MiniPay-friendly checkout links, publish invoices on Celo, and accept stablecoin payments in one tap.",
+    "LinkRail is a MiniPay-ready stablecoin checkout for shareable payment links, direct Celo settlement, and lightweight onchain proof.",
 };
 
 export default function RootLayout({
@@ -16,7 +16,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <body suppressHydrationWarning className="app-body">
         <Providers>
           <div className="app-frame">

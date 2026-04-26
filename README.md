@@ -1,6 +1,6 @@
-# MiniPay Checkout
+# LinkRail
 
-MiniPay Checkout is a standalone MiniPay-friendly merchant payments MVP for Celo.
+LinkRail is a standalone MiniPay-friendly merchant payments MVP for Celo.
 
 It lets a merchant:
 

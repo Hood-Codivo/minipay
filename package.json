@@ -1,5 +1,5 @@
 {
-  "name": "minipay-checkout",
+  "name": "linkrail",
   "private": true,
   "version": "0.1.0",
   "scripts": {
@@ -11,6 +11,7 @@
     "deploy:celo-contract": "node scripts/deploy-celo-contract.mjs"
   },
   "dependencies": {
+    "@fontsource/geist-sans": "^5.2.5",
     "buffer": "^6.0.3",
     "clsx": "^2.1.1",
     "lucide-react": "^0.511.0",

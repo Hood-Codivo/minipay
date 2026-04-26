@@ -431,7 +431,7 @@ export function CheckoutPanel() {
       <div className="surface hero-card">
         <div className="surface-head">
           <div>
-            <p className="eyebrow">MiniPay Checkout</p>
+            <p className="eyebrow">LinkRail Checkout</p>
             <h1>{invoice.title}</h1>
           </div>
           <div className="pill-row">
