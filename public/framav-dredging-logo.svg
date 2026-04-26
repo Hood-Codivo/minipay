@@ -1,0 +1,50 @@
+<svg width="1600" height="760" viewBox="0 0 1600 760" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">FRAMAV DREDGING LIMITED logo</title>
+  <desc id="desc">A custom marine dredging logo with a stylized F, dredger arm, cutter head, and wave lines beside the company name.</desc>
+  <defs>
+    <linearGradient id="navyTeal" x1="142" y1="105" x2="482" y2="584" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#073A4A"/>
+      <stop offset="0.55" stop-color="#0D5A64"/>
+      <stop offset="1" stop-color="#0E766D"/>
+    </linearGradient>
+    <linearGradient id="sandGold" x1="236" y1="190" x2="472" y2="485" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#F5C86B"/>
+      <stop offset="1" stop-color="#B9852E"/>
+    </linearGradient>
+    <filter id="softShadow" x="70" y="70" width="500" height="560" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+      <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+      <feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+      <feOffset dy="18"/>
+      <feGaussianBlur stdDeviation="18"/>
+      <feComposite in2="hardAlpha" operator="out"/>
+      <feColorMatrix type="matrix" values="0 0 0 0 0.02 0 0 0 0 0.12 0 0 0 0 0.15 0 0 0 0.18 0"/>
+      <feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_1"/>
+      <feBlend mode="normal" in="SourceGraphic" in2="effect1_dropShadow_1" result="shape"/>
+    </filter>
+  </defs>
+
+  <rect width="1600" height="760" rx="0" fill="#F7FAFA"/>
+
+  <g filter="url(#softShadow)">
+    <path d="M318 87C390 118 478 120 531 119V322C531 451 449 547 318 611C187 547 105 451 105 322V119C158 120 246 118 318 87Z" fill="url(#navyTeal)"/>
+    <path d="M318 123C376 146 447 150 495 151V321C495 425 431 508 318 568C205 508 141 425 141 321V151C189 150 260 146 318 123Z" stroke="#EAF7F6" stroke-width="16"/>
+  </g>
+
+  <path d="M220 241H378C397 241 412 256 412 275V287H285V343H389V389H285V490H220V241Z" fill="#F7FAFA"/>
+  <path d="M287 474C343 414 383 360 420 274" stroke="url(#sandGold)" stroke-width="28" stroke-linecap="round"/>
+  <path d="M424 271L485 296" stroke="#F4C462" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="500" cy="303" r="28" fill="#F4C462"/>
+  <path d="M500 263V343M460 303H540M472 275L528 331M528 275L472 331" stroke="#073A4A" stroke-width="8" stroke-linecap="round"/>
+
+  <path d="M170 438C207 418 244 418 281 438C318 458 355 458 392 438C429 418 466 418 503 438" stroke="#AEE4DD" stroke-width="15" stroke-linecap="round"/>
+  <path d="M177 489C213 471 249 471 285 489C321 507 357 507 393 489C429 471 465 471 501 489" stroke="#F3C163" stroke-width="13" stroke-linecap="round"/>
+
+  <path d="M604 194H1284" stroke="#0B3945" stroke-width="5" stroke-linecap="round"/>
+  <text x="600" y="346" fill="#073A4A" font-family="Montserrat, Avenir Next, Arial, sans-serif" font-size="126" font-weight="800" letter-spacing="4">FRAMAV</text>
+  <text x="608" y="440" fill="#0E766D" font-family="Montserrat, Avenir Next, Arial, sans-serif" font-size="53" font-weight="700" letter-spacing="9">DREDGING LIMITED</text>
+
+  <path d="M604 489H866" stroke="#B9852E" stroke-width="8" stroke-linecap="round"/>
+  <path d="M904 489C938 470 972 470 1006 489C1040 508 1074 508 1108 489C1142 470 1176 470 1210 489" stroke="#0E766D" stroke-width="8" stroke-linecap="round"/>
+
+  <text x="608" y="550" fill="#54666A" font-family="Montserrat, Avenir Next, Arial, sans-serif" font-size="34" font-weight="600" letter-spacing="1.2">Dredging Depths | Delivering Progress</text>
+</svg>
