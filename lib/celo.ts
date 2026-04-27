@@ -163,6 +163,9 @@ const ERC20_ABI = [
 const createdEvent = parseAbiItem(
   "event InvoiceCreated(uint256 indexed invoiceId, address indexed merchant, address indexed token, uint256 amount, uint64 expiresAt, bytes32 referenceHash, bytes32 metadataHash)",
 );
+const transferEvent = parseAbiItem(
+  "event Transfer(address indexed from, address indexed to, uint256 value)",
+);
 
 let publicClient: any = null;
 
@@ -214,6 +217,10 @@ export function getTokenByAddress(address: string): TokenDescriptor | null {
 
 export function isValidAddress(value: string): boolean {
   return isAddress(value);
+}
+
+export function isTransactionHash(value: string): value is Hex {
+  return /^0x[a-fA-F0-9]{64}$/.test(value.trim());
 }
 
 export function hashFreeform(value: string): Hex {
@@ -337,6 +344,60 @@ export async function sendStableTokenTransfer(params: {
     to: getAddress(params.tokenAddress),
     data,
   });
+}
+
+export async function verifyStableTokenTransfer(params: {
+  hash: string;
+  merchant: string;
+  tokenAddress: string;
+  tokenDecimals: number;
+  amount: string;
+}) {
+  if (!isTransactionHash(params.hash)) {
+    throw new Error("Payment transaction hash must be a valid 0x-prefixed hash.");
+  }
+
+  const normalizedHash = params.hash.trim() as Hex;
+  const expectedRecipient = getAddress(params.merchant);
+  const expectedToken = getAddress(params.tokenAddress);
+  const expectedAmount = parseUnits(params.amount, params.tokenDecimals);
+  const receipt = await getPublicClient().getTransactionReceipt({
+    hash: normalizedHash,
+  });
+
+  if (receipt.status !== "success") {
+    throw new Error("The payment transaction did not succeed onchain.");
+  }
+
+  for (const log of receipt.logs) {
+    try {
+      const decoded = decodeEventLog({
+        abi: [transferEvent],
+        data: log.data,
+        topics: log.topics,
+      });
+
+      if (
+        decoded.eventName === "Transfer" &&
+        getAddress(log.address) === expectedToken &&
+        getAddress(decoded.args.to) === expectedRecipient &&
+        decoded.args.value === expectedAmount
+      ) {
+        return {
+          hash: normalizedHash,
+          payer: getAddress(decoded.args.from),
+          merchant: expectedRecipient,
+          receipt,
+        };
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error(
+    "That transaction does not match the expected token transfer for this invoice.",
+  );
 }
 
 export async function createRegistryInvoice(params: {

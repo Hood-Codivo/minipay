@@ -83,6 +83,7 @@ contract MiniPayCheckoutRegistry {
 
         require(invoice.merchant != address(0), "INVOICE_NOT_FOUND");
         require(invoice.status == InvoiceStatus.Open, "INVOICE_NOT_OPEN");
+        require(invoice.merchant == msg.sender, "ONLY_MERCHANT");
         require(paymentTxHash != bytes32(0), "PAYMENT_HASH_REQUIRED");
         require(
             invoice.expiresAt == 0 || invoice.expiresAt >= block.timestamp,

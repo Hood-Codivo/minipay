@@ -40,12 +40,12 @@ export default function RegistryPage() {
         </article>
         <article className="feature-card">
           <p className="eyebrow">Contract Methods</p>
-          <h2>Create, mark paid, or cancel</h2>
+          <h2>Create, confirm as merchant, or cancel</h2>
           <p>
             The registry supports <code>createInvoice</code>,{" "}
             <code>markInvoicePaid</code>, and <code>cancelInvoice</code>. The
-            checkout UI calls the payment transfer first, then records the
-            settlement hash.
+            checkout UI sends the payment transfer first, then the merchant
+            wallet records the settlement hash.
           </p>
         </article>
         <article className="feature-card">
@@ -99,9 +99,9 @@ export default function RegistryPage() {
           <strong>MVP trust assumption</strong>
           <p>
             The registry records invoice and settlement references, but it does
-            not verify token transfers at the contract level. For Proof of Ship,
-            that keeps checkout friction low while still proving a real Celo
-            mainnet deployment.
+            not verify token transfers at the contract level. Merchant-only
+            settlement prevents third parties from forging invoice state, while
+            keeping checkout friction low enough for a real Celo mainnet MVP.
           </p>
         </div>
       </section>

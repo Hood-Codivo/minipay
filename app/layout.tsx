@@ -8,6 +8,10 @@ export const metadata: Metadata = {
   title: "LinkRail",
   description:
     "LinkRail is a MiniPay-ready stablecoin checkout for shareable payment links, direct Celo settlement, and lightweight onchain proof.",
+  other: {
+    "talentapp:project_verification":
+      "353c0c8404b78500210833d26076cf51e790e7a12768e8aa959ea0d7fb2367bc96e607b17db9613a661c4021067a3b877b6425801b1a37a29d78e809a7ca8351",
+  },
 };
 
 export default function RootLayout({

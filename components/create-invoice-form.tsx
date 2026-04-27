@@ -23,14 +23,10 @@ import {
   isValidAddress,
   toUnixTimestamp,
 } from "@/lib/celo";
-import {
-  buildCheckoutHref,
-  buildCheckoutUrl,
-  resolveAppOrigin,
-} from "@/lib/checkout-codec";
 import { formatAddress } from "@/lib/checkout-format";
 import {
   createInvoiceKey,
+  type CheckoutLinkPayload,
   type LocalCheckoutPayload,
   type RegistryCheckoutPayload,
   type StoredInvoiceRecord,
@@ -77,6 +73,35 @@ function resolveExpiryIso(windowValue: string): string | null {
 async function copyToClipboard(value: string, label: string) {
   await navigator.clipboard.writeText(value);
   toast.success(`${label} copied.`);
+}
+
+async function createSignedCheckoutLink(payload: CheckoutLinkPayload) {
+  const response = await fetch("/api/checkout-link", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = (await response.json().catch(() => null)) as
+    | { error?: string; previewHref?: string; shareUrl?: string }
+    | null;
+
+  if (!response.ok) {
+    throw new Error(
+      data?.error ?? "Could not generate a signed checkout link right now.",
+    );
+  }
+
+  if (!data?.previewHref || !data.shareUrl) {
+    throw new Error("Signed checkout link response was incomplete.");
+  }
+
+  return {
+    previewHref: data.previewHref,
+    shareUrl: data.shareUrl,
+  };
 }
 
 export function CreateInvoiceForm() {
@@ -202,9 +227,7 @@ export function CreateInvoiceForm() {
     try {
       const invoiceId = crypto.randomUUID();
       const payload = buildLocalPayload(invoiceId);
-      const origin = resolveAppOrigin();
-      const shareUrl = buildCheckoutUrl(origin, payload);
-      const previewHref = buildCheckoutHref(payload);
+      const { previewHref, shareUrl } = await createSignedCheckoutLink(payload);
 
       upsertStoredInvoice(createStoredRecord(shareUrl, "local", invoiceId));
       setShareResult({
@@ -284,9 +307,7 @@ export function CreateInvoiceForm() {
         note: invoiceMeta.note,
       };
 
-      const origin = resolveAppOrigin();
-      const shareUrl = buildCheckoutUrl(origin, payload);
-      const previewHref = buildCheckoutHref(payload);
+      const { previewHref, shareUrl } = await createSignedCheckoutLink(payload);
 
       upsertStoredInvoice(
         createStoredRecord(shareUrl, "registry", invoiceId, hash),

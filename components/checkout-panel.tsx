@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   AlertTriangle,
   ArrowRight,
@@ -11,7 +11,6 @@ import {
   LoaderCircle,
   Wallet,
 } from "lucide-react";
-import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 
 import {
@@ -21,12 +20,13 @@ import {
   getExplorerTxUrl,
   getMiniPayAddCashUrl,
   getTokenByKey,
+  isTransactionHash,
   isValidAddress,
   markRegistryInvoicePaid,
   readRegistryInvoice,
   sendStableTokenTransfer,
+  verifyStableTokenTransfer,
 } from "@/lib/celo";
-import { decodeCheckoutPayload } from "@/lib/checkout-codec";
 import {
   formatAddress,
   formatAmount,
@@ -66,6 +66,11 @@ interface LoadedInvoice {
   settlementTxHash?: string;
 }
 
+interface CheckoutPanelProps {
+  initialPayload: CheckoutLinkPayload | null;
+  initialError?: string | null;
+}
+
 function deriveLocalStatus(
   expiresAt: string | null,
   storedStatus: InvoiceStatus | undefined,
@@ -86,38 +91,37 @@ async function copyText(value: string, label: string) {
   toast.success(`${label} copied.`);
 }
 
-export function CheckoutPanel() {
-  const searchParams = useSearchParams();
+export function CheckoutPanel({
+  initialPayload,
+  initialError = null,
+}: CheckoutPanelProps) {
   const wallet = useMiniPayWallet();
   const registryAddress = getConfiguredRegistryAddress();
   const activeNetwork = getActiveNetwork();
-
-  const payload = useMemo<CheckoutLinkPayload | null>(() => {
-    const encoded = searchParams.get("data");
-    return encoded ? decodeCheckoutPayload(encoded) : null;
-  }, [searchParams]);
+  const payload = initialPayload;
 
   const [invoice, setInvoice] = useState<LoadedInvoice | null>(null);
   const [loading, setLoading] = useState(false);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(initialError);
   const [paymentError, setPaymentError] = useState<string | null>(null);
   const [pendingAction, setPendingAction] = useState<"pay" | "settle" | null>(
     null,
   );
-  const [settlementPending, setSettlementPending] = useState(false);
+  const [manualPaymentTxHash, setManualPaymentTxHash] = useState("");
 
   useEffect(() => {
     let cancelled = false;
 
     async function loadInvoice() {
       setLoading(false);
-      setLoadError(null);
+      setLoadError(initialError);
       setPaymentError(null);
-      setSettlementPending(false);
 
       if (!payload) {
         setInvoice(null);
-        setLoadError("This checkout link is missing its encoded invoice payload.");
+        if (!initialError) {
+          setLoadError("This checkout link is missing its signed payload.");
+        }
         return;
       }
 
@@ -219,15 +223,38 @@ export function CheckoutPanel() {
     return () => {
       cancelled = true;
     };
-  }, [activeNetwork, payload, registryAddress]);
+  }, [activeNetwork, initialError, payload, registryAddress]);
 
-  const canPay =
+  useEffect(() => {
+    setManualPaymentTxHash(invoice?.paymentTxHash ?? "");
+  }, [invoice?.paymentTxHash]);
+
+  const isMerchantWallet = Boolean(
     invoice &&
-    invoice.status === "open" &&
-    !invoice.paymentTxHash &&
-    wallet.isConnected &&
-    wallet.isExpectedChain &&
-    wallet.provider;
+      wallet.address &&
+      invoice.merchant.toLowerCase() === wallet.address.toLowerCase(),
+  );
+
+  const canPay = Boolean(
+    invoice &&
+      invoice.status === "open" &&
+      !invoice.paymentTxHash &&
+      wallet.isConnected &&
+      wallet.isExpectedChain &&
+      wallet.provider &&
+      wallet.address &&
+      wallet.address.toLowerCase() !== invoice.merchant.toLowerCase(),
+  );
+
+  const canRecordSettlement = Boolean(
+    invoice &&
+      invoice.mode === "registry" &&
+      invoice.status === "open" &&
+      isMerchantWallet &&
+      wallet.provider &&
+      wallet.isExpectedChain &&
+      isTransactionHash(manualPaymentTxHash),
+  );
 
   async function handlePay() {
     if (!invoice || !wallet.provider || !wallet.address) {
@@ -257,32 +284,6 @@ export function CheckoutPanel() {
         amount: invoice.amount,
       });
 
-      let settlementTxHash: string | undefined;
-
-      if (invoice.mode === "registry" && invoice.registryInvoiceId) {
-        try {
-          const settlement = await markRegistryInvoicePaid({
-            provider: wallet.provider,
-            account: wallet.address,
-            invoiceId: invoice.registryInvoiceId,
-            paymentTxHash: transfer.hash,
-          });
-          settlementTxHash = settlement.hash;
-          setSettlementPending(false);
-          toast.success("Registry receipt recorded on Celo.");
-        } catch (caught) {
-          const message =
-            caught instanceof Error
-              ? caught.message
-              : "Transfer succeeded, but the registry receipt still needs confirmation.";
-          setSettlementPending(true);
-          setPaymentError(message);
-          toast.warning(
-            "Transfer sent. Record the registry receipt to close the invoice.",
-          );
-        }
-      }
-
       const paymentRecord: PaymentRecord = {
         key: `${invoice.key}:${transfer.hash}`,
         invoiceKey: invoice.key,
@@ -294,17 +295,14 @@ export function CheckoutPanel() {
         payer: wallet.address,
         paidAt: new Date().toISOString(),
         paymentTxHash: transfer.hash,
-        settlementTxHash,
       };
 
       upsertPaymentRecord(paymentRecord);
 
       updateStoredInvoice(invoice.key, (current) => ({
         ...current,
-        status:
-          invoice.mode === "local" || settlementTxHash ? "paid" : current.status,
+        status: invoice.mode === "local" ? "paid" : current.status,
         paymentTxHash: transfer.hash,
-        settlementTxHash,
       }));
 
       setInvoice((current) =>
@@ -312,16 +310,22 @@ export function CheckoutPanel() {
           ? {
               ...current,
               paymentTxHash: transfer.hash,
-              settlementTxHash,
-              status:
-                current.mode === "local" || settlementTxHash
-                  ? "paid"
-                  : current.status,
+              status: current.mode === "local" ? "paid" : current.status,
             }
           : current,
       );
+      setManualPaymentTxHash(transfer.hash);
 
-      toast.success("Stablecoin payment sent.");
+      if (invoice.mode === "registry") {
+        setPaymentError(
+          "Payment sent. The merchant must connect the receiving wallet and record this payment onchain.",
+        );
+        toast.warning(
+          "Payment sent. Share the transfer hash with the merchant to finalize the registry receipt.",
+        );
+      } else {
+        toast.success("Stablecoin payment sent.");
+      }
     } catch (caught) {
       setPaymentError(
         caught instanceof Error
@@ -338,10 +342,21 @@ export function CheckoutPanel() {
       !invoice ||
       invoice.mode !== "registry" ||
       !invoice.registryInvoiceId ||
-      !invoice.paymentTxHash ||
       !wallet.provider ||
       !wallet.address
     ) {
+      return;
+    }
+
+    if (!isMerchantWallet) {
+      setPaymentError(
+        "Only the merchant wallet that created this invoice can record the onchain receipt.",
+      );
+      return;
+    }
+
+    if (!isTransactionHash(manualPaymentTxHash)) {
+      setPaymentError("Enter a valid payment transaction hash first.");
       return;
     }
 
@@ -349,30 +364,39 @@ export function CheckoutPanel() {
     setPaymentError(null);
 
     try {
+      const verifiedTransfer = await verifyStableTokenTransfer({
+        hash: manualPaymentTxHash,
+        merchant: invoice.merchant,
+        tokenAddress: invoice.tokenAddress,
+        tokenDecimals: invoice.decimals,
+        amount: invoice.amount,
+      });
+
       const settlement = await markRegistryInvoicePaid({
         provider: wallet.provider,
         account: wallet.address,
         invoiceId: invoice.registryInvoiceId,
-        paymentTxHash: invoice.paymentTxHash as `0x${string}`,
+        paymentTxHash: verifiedTransfer.hash,
       });
 
       upsertPaymentRecord({
-        key: `${invoice.key}:${invoice.paymentTxHash}`,
+        key: `${invoice.key}:${verifiedTransfer.hash}`,
         invoiceKey: invoice.key,
         mode: invoice.mode,
         chain: activeNetwork,
         tokenKey: invoice.tokenKey,
         amount: invoice.amount,
         merchant: invoice.merchant,
-        payer: wallet.address,
+        payer: verifiedTransfer.payer,
         paidAt: new Date().toISOString(),
-        paymentTxHash: invoice.paymentTxHash,
+        paymentTxHash: verifiedTransfer.hash,
         settlementTxHash: settlement.hash,
       });
 
       updateStoredInvoice(invoice.key, (current) => ({
         ...current,
         status: "paid",
+        paymentTxHash: verifiedTransfer.hash,
         settlementTxHash: settlement.hash,
       }));
 
@@ -381,11 +405,12 @@ export function CheckoutPanel() {
           ? {
               ...current,
               status: "paid",
+              paymentTxHash: verifiedTransfer.hash,
               settlementTxHash: settlement.hash,
             }
           : current,
       );
-      setSettlementPending(false);
+      setManualPaymentTxHash(verifiedTransfer.hash);
       toast.success("The registry receipt is now recorded.");
     } catch (caught) {
       setPaymentError(
@@ -402,7 +427,7 @@ export function CheckoutPanel() {
     return (
       <div className="surface loading-surface">
         <LoaderCircle size={22} className="spin" aria-hidden="true" />
-        <p>Loading invoice details from Celo…</p>
+        <p>Loading invoice details from Celo...</p>
       </div>
     );
   }
@@ -519,6 +544,23 @@ export function CheckoutPanel() {
             </div>
           ) : null}
 
+          {invoice.mode === "registry" &&
+          invoice.status === "open" &&
+          invoice.paymentTxHash ? (
+            <div className="warning-banner">
+              <strong>
+                {isMerchantWallet
+                  ? "Merchant confirmation required."
+                  : "Waiting on merchant confirmation."}
+              </strong>
+              <span>
+                {isMerchantWallet
+                  ? "Use the payment hash below to verify the transfer and finalize the registry receipt."
+                  : "The stablecoin transfer has been sent. Only the merchant wallet can record the final onchain receipt now."}
+              </span>
+            </div>
+          ) : null}
+
           {paymentError ? (
             <div className="error-banner" role="alert">
               <strong>Payment needs attention.</strong>
@@ -548,27 +590,12 @@ export function CheckoutPanel() {
               )}
               <span>
                 {invoice.paymentTxHash
-                  ? "Payment recorded"
+                  ? invoice.mode === "registry" && invoice.status !== "paid"
+                    ? "Payment sent"
+                    : "Payment recorded"
                   : `Pay ${formatAmount(invoice.amount)} ${invoice.tokenKey}`}
               </span>
             </button>
-
-            {settlementPending ? (
-              <button
-                type="button"
-                className="button-secondary"
-                disabled={pendingAction !== null}
-                aria-busy={pendingAction === "settle" ? "true" : undefined}
-                onClick={() => void handleRecordSettlement()}
-              >
-                {pendingAction === "settle" ? (
-                  <LoaderCircle size={18} className="spin" aria-hidden="true" />
-                ) : (
-                  <ArrowRight size={18} aria-hidden="true" />
-                )}
-                <span>Record payment onchain</span>
-              </button>
-            ) : null}
 
             {!wallet.isConnected ? (
               <button
@@ -601,6 +628,52 @@ export function CheckoutPanel() {
               <span>Add cash in MiniPay</span>
             </a>
           </div>
+
+          {invoice.mode === "registry" && invoice.status === "open" ? (
+            <div className="keyline">
+              <strong>Record onchain receipt</strong>
+              <p>
+                {isMerchantWallet
+                  ? "Only the merchant wallet can finalize this registry invoice. Paste the payment transaction hash, verify it, and then write the receipt onchain."
+                  : "After the customer pays, the merchant must connect the receiving wallet and record the payment transaction hash to close the invoice onchain."}
+              </p>
+
+              <div className="field">
+                <label htmlFor="paymentTxHash">Payment transaction hash</label>
+                <input
+                  id="paymentTxHash"
+                  type="text"
+                  autoComplete="off"
+                  spellCheck={false}
+                  value={manualPaymentTxHash}
+                  onChange={(event) => setManualPaymentTxHash(event.target.value)}
+                  readOnly={!isMerchantWallet}
+                  placeholder="0x..."
+                />
+              </div>
+
+              {isMerchantWallet ? (
+                <button
+                  type="button"
+                  className="button-secondary"
+                  disabled={!canRecordSettlement || pendingAction !== null}
+                  aria-busy={pendingAction === "settle" ? "true" : undefined}
+                  onClick={() => void handleRecordSettlement()}
+                >
+                  {pendingAction === "settle" ? (
+                    <LoaderCircle
+                      size={18}
+                      className="spin"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    <ArrowRight size={18} aria-hidden="true" />
+                  )}
+                  <span>Record payment onchain</span>
+                </button>
+              ) : null}
+            </div>
+          ) : null}
         </div>
 
         <div className="surface">

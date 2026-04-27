@@ -1,6 +1,9 @@
 import { LandingHeroSection } from "@/components/landing-hero-section";
 import { LandingSocialProofSection } from "@/components/landing-social-proof-section";
-import { buildCheckoutHref } from "@/lib/checkout-codec";
+import {
+  buildSignedCheckoutHref,
+  hasCheckoutSigningSecret,
+} from "@/lib/checkout-signing";
 import { getActiveNetwork, getTokenByKey } from "@/lib/celo";
 import type { LocalCheckoutPayload } from "@/lib/checkout-types";
 
@@ -24,7 +27,9 @@ const demoPayload: LocalCheckoutPayload = {
 };
 
 export default function LandingPage() {
-  const demoHref = buildCheckoutHref(demoPayload);
+  const demoHref = hasCheckoutSigningSecret()
+    ? buildSignedCheckoutHref(demoPayload)
+    : "/create";
 
   return (
     <div className="landing-page">
