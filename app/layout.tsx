@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Script from "next/script";
 
 import { Providers } from "@/components/providers";
 import { SiteHeader } from "@/components/site-header";
@@ -19,8 +20,56 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const stripInjectedHydrationAttributes = `
+    (() => {
+      const attributeName = "bis_skin_checked";
+      const clean = (root = document) => {
+        root.querySelectorAll?.("[" + attributeName + "]").forEach((element) => {
+          element.removeAttribute(attributeName);
+        });
+      };
+
+      clean();
+
+      const observer = new MutationObserver((mutations) => {
+        for (const mutation of mutations) {
+          if (
+            mutation.type === "attributes" &&
+            mutation.attributeName === attributeName
+          ) {
+            mutation.target.removeAttribute(attributeName);
+          }
+
+          for (const node of mutation.addedNodes) {
+            if (node.nodeType === Node.ELEMENT_NODE) {
+              node.removeAttribute?.(attributeName);
+              clean(node);
+            }
+          }
+        }
+      });
+
+      observer.observe(document.documentElement, {
+        attributes: true,
+        childList: true,
+        subtree: true,
+      });
+
+      window.addEventListener("load", () => observer.disconnect(), {
+        once: true,
+      });
+    })();
+  `;
+
   return (
     <html lang="en" data-scroll-behavior="smooth">
+      <head>
+        <Script
+          id="strip-injected-hydration-attributes"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{ __html: stripInjectedHydrationAttributes }}
+        />
+      </head>
       <body suppressHydrationWarning className="app-body">
         <Providers>
           <div className="app-frame">

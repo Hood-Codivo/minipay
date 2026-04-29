@@ -1,6 +1,7 @@
-import Image from "next/image";
 import Link from "next/link";
 import { ChevronDown } from "lucide-react";
+
+import { LinkRailLogo } from "@/components/linkrail-logo";
 
 const navigation = [
   { label: "Features", href: "#features", hasMenu: true },
@@ -14,7 +15,7 @@ export function LandingNavbar() {
     <div className="landing-navbar-shell">
       <nav className="landing-navbar">
         <Link href="/" className="landing-logo-link" aria-label="LinkRail home">
-          <div className="brand-emblem">L</div>
+          <LinkRailLogo />
           <div>LinkRail</div>
         </Link>
 

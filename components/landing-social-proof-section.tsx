@@ -5,7 +5,14 @@ import { useEffect, useRef } from "react";
 const videoSource =
   "https://d8j0ntlcm91z4.cloudfront.net/user_38xzZboKViGWJOttwIXH07lWA1P/hf_20260308_114720_3dabeb9e-2c39-4907-b747-bc3544e2d5b7.mp4";
 
-const brands = ["Vortex", "Nimbus", "Prysma", "Cirrus", "Kynder", "Halcyn"];
+const featureRail = [
+  "Shareable checkout links",
+  "MiniPay-first payment flow",
+  "Celo stablecoin settlement",
+  "Signed invoice payloads",
+  "Optional onchain proof",
+  "Merchant activity history",
+];
 
 export function LandingSocialProofSection() {
   const videoRef = useRef<HTMLVideoElement | null>(null);
@@ -103,23 +110,23 @@ export function LandingSocialProofSection() {
 
         <div className="social-proof-marquee" id="solutions">
           <p className="social-proof-label">
-            Relied on by brands
+            Built for checkout
             <br />
-            across the globe
+            from link to proof
           </p>
 
           <div className="marquee-track-wrap">
             <div className="marquee-track">
-              {[...brands, ...brands].map((brand, index) => (
+              {[...featureRail, ...featureRail].map((feature, index) => (
                 <div
-                  key={`${brand}-${index}`}
+                  key={`${feature}-${index}`}
                   className="marquee-item"
-                  aria-hidden={index >= brands.length ? "true" : undefined}
+                  aria-hidden={index >= featureRail.length ? "true" : undefined}
                 >
                   <span className="marquee-mark liquid-glass" aria-hidden="true">
-                    {brand.charAt(0)}
+                    {String(index % featureRail.length + 1).padStart(2, "0")}
                   </span>
-                  <span>{brand}</span>
+                  <span>{feature}</span>
                 </div>
               ))}
             </div>

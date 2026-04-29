@@ -16,6 +16,8 @@ import { usePathname } from "next/navigation";
 import clsx from "clsx";
 import { useEffect, useState } from "react";
 
+import { LinkRailLogo } from "@/components/linkrail-logo";
+
 const navigation: Array<{
   href: string;
   route: Route;
@@ -65,7 +67,7 @@ export function SiteHeader() {
     <header className={clsx("site-header", menuOpen && "menu-open")}>
       <div className="site-header-bar">
         <Link href="/" className="brand-mark">
-          <div className="brand-emblem">L</div>
+          <LinkRailLogo />
           <div className="brand-copy">
             <h1>LinkRail</h1>
           </div>
